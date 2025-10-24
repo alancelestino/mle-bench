@@ -1,0 +1,17 @@
+id: freiburg-groceries
+name: Freiburg Groceries Image Classification
+competition_type: simple
+awards_medals: true
+prizes: null
+description: mlebench/competitions/freiburg-groceries/description.md
+
+dataset:
+  answers: freiburg-groceries/prepared/private/test.csv
+  sample_submission: freiburg-groceries/prepared/public/sample_submission.csv
+
+grader:
+  name: accuracy
+  grade_fn: mlebench.competitions.freiburg-groceries.grade:grade
+
+preparer: mlebench.competitions.freiburg-groceries.prepare:prepare
+

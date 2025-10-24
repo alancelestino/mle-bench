@@ -1,0 +1,32 @@
+"""
+Classes for the Freiburg Groceries Image Classification competition.
+"""
+
+CLASSES = [
+    "BEANS",
+    "CAKE",
+    "CANDY",
+    "CEREAL",
+    "CHIPS",
+    "CHOCOLATE",
+    "COFFEE",
+    "CORN",
+    "FISH",
+    "FLOUR",
+    "HONEY",
+    "JAM",
+    "JUICE",
+    "MILK",
+    "NUTS",
+    "OIL",
+    "PASTA",
+    "RICE",
+    "SODA",
+    "SPICES",
+    "SUGAR",
+    "TEA",
+    "TOMATO_SAUCE",
+    "VINEGAR",
+    "WATER",
+]
+
