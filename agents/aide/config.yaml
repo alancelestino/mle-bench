@@ -107,6 +107,17 @@ aide/claude-3-5-sonnet:
     <<: *env_vars
     ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
 
+aide/claude-sonnet-4-5-20250929:
+  <<: *defaults
+  kwargs:
+    <<: *kwargs_common
+    agent.code.model: claude-sonnet-4-5-20250929
+    agent.feedback.model: claude-sonnet-4-5-20250929
+    agent.steps: *step_count
+  env_vars:
+    <<: *env_vars
+    ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+
 aide/llama-3.1-405b-instruct:
   <<: *defaults
   kwargs:

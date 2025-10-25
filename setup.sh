@@ -1,0 +1,139 @@
+#!/bin/bash
+
+# Exit on any error
+set -e
+
+# Always run from this script's directory to ensure correct context
+cd "$(cd "$(dirname "$0")" && pwd)"
+
+echo "=========================================="
+echo "MLE-bench Setup Script"
+echo "=========================================="
+
+# Check if Docker is installed
+if ! command -v docker &> /dev/null; then
+    echo "Error: Docker is not installed."
+    echo "Please install Docker first: https://docs.docker.com/engine/install/"
+    exit 1
+fi
+
+# Check if running with sudo/root for system package installation
+if [ "$EUID" -ne 0 ]; then 
+    echo "Note: This script requires sudo privileges for installing system packages."
+    echo "You may be prompted for your password."
+fi
+
+# Install Sysbox
+echo ""
+echo "Installing Sysbox..."
+echo "Sysbox provides enhanced container security for running agents."
+
+# Check if sysbox is already installed
+if systemctl is-active --quiet sysbox 2>/dev/null; then
+    echo "Sysbox is already installed and running."
+else
+    # Update package lists
+    sudo apt update
+
+    # Install prerequisites
+    sudo apt install -y wget curl apt-transport-https fuse rsync
+
+    # Remove any existing Docker containers to allow Sysbox post-install to proceed
+    CONTAINERS=$(docker ps -aq || true)
+    if [ -n "$CONTAINERS" ]; then
+        echo "Removing existing Docker containers before Sysbox install..."
+        sudo docker rm -f $CONTAINERS || true
+    fi
+
+    # Download the latest Sysbox package from GitHub releases
+    echo "Fetching latest Sysbox release URL..."
+    SYSBOX_DEB_URL=$(curl -s https://api.github.com/repos/nestybox/sysbox/releases/latest | grep browser_download_url | grep 'sysbox-ce_.*linux_amd64.deb' | head -n1 | cut -d '"' -f 4)
+    if [ -z "$SYSBOX_DEB_URL" ]; then
+        echo "Error: Could not resolve Sysbox release URL from GitHub."
+        exit 1
+    fi
+
+    echo "Downloading Sysbox from $SYSBOX_DEB_URL ..."
+    wget -q "$SYSBOX_DEB_URL" -O sysbox-ce.deb
+
+    # Install Sysbox
+    echo "Installing Sysbox (this may take a moment)..."
+    sudo apt install -y ./sysbox-ce.deb || true
+
+    # Clean up downloaded package
+    rm -f sysbox-ce.deb
+
+    # Ensure Docker is restarted so it picks up the sysbox runtime
+    sudo systemctl restart docker || true
+    sleep 2
+
+    # Verify Sysbox services are running
+    if systemctl is-active --quiet sysbox; then
+        echo "✓ Sysbox installed and running successfully!"
+    else
+        echo "Warning: Sysbox may not be running correctly."
+        echo "Check status with: sudo systemctl status sysbox"
+    fi
+fi
+
+echo ""
+echo "Setting up Python virtual environment for MLE-bench..."
+
+# Check if venv module is available
+if ! python3 -c "import venv" &> /dev/null; then
+    echo "Error: Python venv module is not available."
+    echo "On Debian/Ubuntu systems, install it with:"
+    echo "  sudo apt update && sudo apt install python3.11-venv"
+    echo ""
+    echo "After installing python3.11-venv, run this script again."
+    exit 1
+fi
+
+# Create virtual environment in ./.venv
+python3 -m venv .venv
+
+# Activate the virtual environment
+source .venv/bin/activate
+
+echo "Virtual environment created and activated."
+
+# Install Git-LFS if not already installed and pull LFS files
+# (Some MLE-bench competition data is stored using Git-LFS)
+if command -v git-lfs &> /dev/null; then
+    echo "Git-LFS found. Fetching and pulling LFS files..."
+    git lfs fetch --all
+    git lfs pull
+else
+    echo "Warning: Git-LFS not found. Some competition data may not be available."
+    echo "Install Git-LFS from https://git-lfs.com/ if you need the full dataset."
+fi
+
+# Install MLE-bench in editable mode
+echo "Installing MLE-bench..."
+pip install -e .
+
+# Build Docker images required to run agents
+echo ""
+echo "Building Docker images (this may take several minutes)..."
+
+# Base environment image
+docker build --platform=linux/amd64 -t mlebench-env -f environment/Dockerfile .
+
+# Dummy agent image
+export SUBMISSION_DIR=/home/submission
+export LOGS_DIR=/home/logs
+export CODE_DIR=/home/code
+export AGENT_DIR=/home/agent
+docker build --platform=linux/amd64 -t dummy agents/dummy/ \
+  --build-arg SUBMISSION_DIR=$SUBMISSION_DIR \
+  --build-arg LOGS_DIR=$LOGS_DIR \
+  --build-arg CODE_DIR=$CODE_DIR \
+  --build-arg AGENT_DIR=$AGENT_DIR
+
+# Prepare local dataset for Freiburg Groceries competition
+echo ""
+echo "Preparing local dataset for freiburg-groceries..."
+python prepare_local_competition.py -c freiburg-groceries || true
+
+echo "Setup complete! To activate the virtual environment in future sessions, run:"
+echo "source .venv/bin/activate"
