@@ -1,0 +1,2 @@
+CID=$(docker ps --filter "name=competition-freiburg-groceries" --format '{{.ID}}' | head -1)
+docker exec -it "$CID" bash

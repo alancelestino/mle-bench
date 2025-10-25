@@ -112,7 +112,7 @@ aide/claude-sonnet-4-5-20250929:
   kwargs:
     <<: *kwargs_common
     agent.code.model: claude-sonnet-4-5-20250929
-    agent.feedback.model: claude-sonnet-4-5-20250929
+    agent.feedback.model: gpt-4o-2024-08-06
     agent.steps: *step_count
   env_vars:
     <<: *env_vars
