@@ -6,6 +6,28 @@ set -e
 # Always run from this script's directory to ensure correct context
 cd "$(cd "$(dirname "$0")" && pwd)"
 
+# Parse args
+REBUILD_IMAGES=false
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --rebuild-images|--force-rebuild)
+            REBUILD_IMAGES=true
+            shift
+            ;;
+        *)
+            echo "Unknown argument: $1" && exit 1
+            ;;
+    esac
+done
+
+# Load environment variables from .env file if it exists
+if [ -f .env ]; then
+    echo "Loading environment variables from .env file..."
+    set -a
+    source .env
+    set +a
+fi
+
 echo "=========================================="
 echo "MLE-bench Setup Script"
 echo "=========================================="
@@ -21,6 +43,57 @@ fi
 if [ "$EUID" -ne 0 ]; then 
     echo "Note: This script requires sudo privileges for installing system packages."
     echo "You may be prompted for your password."
+fi
+
+# Optional: CUDA/NVIDIA driver + Container Toolkit setup (idempotent)
+echo ""
+echo "Checking NVIDIA GPU / CUDA setup..."
+if command -v nvidia-smi &> /dev/null; then
+    echo "✓ nvidia-smi found. Skipping CUDA driver install."
+else
+    echo "NVIDIA driver not detected. Installing CUDA driver and NVIDIA Container Toolkit..."
+    export DEBIAN_FRONTEND=noninteractive
+    # Install kernel headers for running kernel (for DKMS builds)
+    KVER=$(uname -r)
+    sudo apt-get update -y
+    sudo apt-get install -y linux-headers-$KVER build-essential dkms curl ca-certificates gnupg
+
+    # Add NVIDIA Container Toolkit repo
+    if [ ! -f /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg ]; then
+        curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor --batch --yes -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+        curl -fsSL https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list \
+          | sed "s#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g" \
+          | sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list >/dev/null
+    fi
+
+    # Add CUDA repo (Debian 12/Ubuntu equivalents)
+    if [ ! -f /usr/share/keyrings/cuda-archive-keyring.gpg ]; then
+        if . /etc/os-release; then
+            if [ "$ID" = "debian" ] && [ "$VERSION_ID" = "12" ]; then
+                wget -qO- https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/3bf863cc.pub | \
+                  sudo gpg --dearmor --batch --yes -o /usr/share/keyrings/cuda-archive-keyring.gpg
+                echo "deb [signed-by=/usr/share/keyrings/cuda-archive-keyring.gpg arch=amd64] https://developer.download.nvidia.com/compute/cuda/repos/debian12/x86_64/ /" \
+                  | sudo tee /etc/apt/sources.list.d/cuda-debian12-x86_64.list >/dev/null
+            fi
+        fi
+    fi
+
+    sudo apt-get update -y
+    # Install container toolkit and configure Docker runtime
+    sudo apt-get install -y nvidia-container-toolkit
+    sudo nvidia-ctk runtime configure --runtime=docker || true
+    sudo systemctl restart docker || true
+
+    # Install CUDA drivers meta-package
+    sudo apt-get install -y cuda-drivers || true
+
+    # Try to load the module and verify
+    sudo modprobe nvidia || true
+    if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
+        echo "✓ NVIDIA driver installed and active."
+    else
+        echo "Note: NVIDIA driver installed but not yet active. A reboot may be required."
+    fi
 fi
 
 # Install Sysbox
@@ -114,21 +187,71 @@ pip install -e .
 
 # Build Docker images required to run agents
 echo ""
-echo "Building Docker images (this may take several minutes)..."
+echo "Checking Docker images..."
+
+if [ "$REBUILD_IMAGES" = true ]; then
+    echo "Forcing rebuild of Docker images (no cache)..."
+fi
 
 # Base environment image
-docker build --platform=linux/amd64 -t mlebench-env -f environment/Dockerfile .
+if [ "$REBUILD_IMAGES" = true ]; then
+    echo "Rebuilding 'mlebench-env' image (this may take several minutes)..."
+    docker build --no-cache --platform=linux/amd64 -t mlebench-env -f environment/Dockerfile .
+else
+    if docker image inspect mlebench-env &> /dev/null; then
+        echo "✓ Docker image 'mlebench-env' already exists, skipping build."
+    else
+        echo "Building 'mlebench-env' image (this may take several minutes)..."
+        docker build --platform=linux/amd64 -t mlebench-env -f environment/Dockerfile .
+    fi
+fi
 
 # Dummy agent image
 export SUBMISSION_DIR=/home/submission
 export LOGS_DIR=/home/logs
 export CODE_DIR=/home/code
 export AGENT_DIR=/home/agent
-docker build --platform=linux/amd64 -t dummy agents/dummy/ \
-  --build-arg SUBMISSION_DIR=$SUBMISSION_DIR \
-  --build-arg LOGS_DIR=$LOGS_DIR \
-  --build-arg CODE_DIR=$CODE_DIR \
-  --build-arg AGENT_DIR=$AGENT_DIR
+
+if [ "$REBUILD_IMAGES" = true ]; then
+    echo "Rebuilding 'dummy' agent image (this may take several minutes)..."
+    docker build --no-cache --platform=linux/amd64 -t dummy agents/dummy/ \
+      --build-arg SUBMISSION_DIR=$SUBMISSION_DIR \
+      --build-arg LOGS_DIR=$LOGS_DIR \
+      --build-arg CODE_DIR=$CODE_DIR \
+      --build-arg AGENT_DIR=$AGENT_DIR
+else
+    if docker image inspect dummy &> /dev/null; then
+        echo "✓ Docker image 'dummy' already exists, skipping build."
+    else
+        echo "Building 'dummy' agent image (this may take several minutes)..."
+        docker build --platform=linux/amd64 -t dummy agents/dummy/ \
+          --build-arg SUBMISSION_DIR=$SUBMISSION_DIR \
+          --build-arg LOGS_DIR=$LOGS_DIR \
+          --build-arg CODE_DIR=$CODE_DIR \
+          --build-arg AGENT_DIR=$AGENT_DIR
+    fi
+fi
+
+# Aide agent image (used by default runs)
+if [ "$REBUILD_IMAGES" = true ]; then
+    echo "Rebuilding 'aide' agent image (this may take several minutes)..."
+    docker build --no-cache --platform=linux/amd64 -t aide agents/aide/ \
+      --build-arg SUBMISSION_DIR=$SUBMISSION_DIR \
+      --build-arg LOGS_DIR=$LOGS_DIR \
+      --build-arg CODE_DIR=$CODE_DIR \
+      --build-arg AGENT_DIR=$AGENT_DIR
+else
+    if docker image inspect aide &> /dev/null; then
+        echo "✓ Docker image 'aide' already exists, skipping build."
+    else
+        echo "Building 'aide' agent image (this may take several minutes)..."
+        docker build --platform=linux/amd64 -t aide agents/aide/ \
+          --build-arg SUBMISSION_DIR=$SUBMISSION_DIR \
+          --build-arg LOGS_DIR=$LOGS_DIR \
+          --build-arg CODE_DIR=$CODE_DIR \
+          --build-arg AGENT_DIR=$AGENT_DIR
+    fi
+fi
 
 # Prepare local dataset for Freiburg Groceries competition
 echo ""
