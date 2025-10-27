@@ -6,7 +6,10 @@
 set -e  # Exit on any error
 
 BUCKET_PATH="gs://internal-llm-rnd/mle-bench/turing-tasks"
-DEST_DIR="./custom_data"
+# Resolve repository root even when called from elsewhere
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
+DEST_DIR="$REPO_ROOT/custom_data"
 
 echo "Starting selective download from $BUCKET_PATH to $DEST_DIR"
 

@@ -5,10 +5,13 @@ set -euo pipefail
 # Always run from this script's directory
 cd "$(cd "$(dirname "$0")" && pwd)"
 
+# Repository root (two levels up from scripts/agents)
+REPO_ROOT="$(cd "$(dirname "$0")"/../.. && pwd)"
+
 # Load environment variables (if present in repo root)
 set -a
-if [ -f "$PWD/.env" ]; then
-    source "$PWD/.env"
+if [ -f "$REPO_ROOT/.env" ]; then
+    . "$REPO_ROOT/.env"
 fi
 set +a
 
