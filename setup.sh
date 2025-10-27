@@ -253,10 +253,13 @@ else
     fi
 fi
 
-# Prepare local dataset for Freiburg Groceries competition
 echo ""
-echo "Preparing local dataset for freiburg-groceries..."
-python prepare_local_competition.py -c freiburg-groceries || true
+echo "Local competition preparation"
+echo "------------------------------------------"
+echo "We no longer auto-run a local prepare here."
+echo "Open scripts/add_new_competition/LLM_ADD_COMPETITION_GUIDE.md in Cursor"
+echo "and follow the step-by-step instructions to add and prepare competitions."
+echo "(Helper available: scripts/add_new_competition/prepare_local_competition.py)"
 
 echo "Setup complete! To activate the virtual environment in future sessions, run:"
 echo "source .venv/bin/activate"

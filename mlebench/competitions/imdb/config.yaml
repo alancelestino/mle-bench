@@ -1,0 +1,16 @@
+id: imdb
+name: Imdb
+competition_type: simple
+awards_medals: true
+prizes: null
+description: mlebench/competitions/imdb/description.md
+
+dataset:
+  answers: imdb/prepared/private/test.csv
+  sample_submission: imdb/prepared/public/sample_submission.csv
+
+grader:
+  name: auto
+  grade_fn: mlebench.competitions.imdb.grade:grade
+
+preparer: mlebench.competitions.imdb.prepare:prepare

@@ -148,3 +148,4 @@ dmypy.json
 # Data
 custom_data/
 tree_plot.html
+.data/
