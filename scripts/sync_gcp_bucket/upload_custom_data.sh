@@ -33,11 +33,12 @@ if ! gsutil ls gs://internal-llm-rnd &> /dev/null; then
     exit 1
 fi
 
-echo "Uploading contents of $SOURCE_DIR to $BUCKET_PATH..."
+echo "Uploading contents of $SOURCE_DIR to $BUCKET_PATH (skipping existing files)..."
 
-# Use gsutil with parallel uploads (-m) and recursive copy (-r)
+# Use gsutil with parallel uploads (-m), no-clobber (-n), and recursive copy (-r)
+# -n ensures only files that do NOT already exist at the destination are uploaded
 # This preserves the directory structure
-gsutil -m cp -r "$SOURCE_DIR"/* "$BUCKET_PATH/"
+gsutil -m cp -n -r "$SOURCE_DIR"/* "$BUCKET_PATH/"
 
 if [ $? -eq 0 ]; then
     echo "Upload completed successfully!"
