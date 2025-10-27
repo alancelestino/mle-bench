@@ -16,7 +16,7 @@ source /home/alan_celestino/mle-bench/.env
 set +a
 
 # Defaults (override via env or CLI vars if desired)
-AGENT_ID="${AGENT_ID:-aide/claude-sonnet-4-5-20250929}"
+AGENT_ID="${AGENT_ID:-aide/claude-sonnet-4-5}"
 COMP_SET="${COMP_SET:-/home/alan_celestino/mle-bench/experiments/splits/freiburg-groceries.txt}"
 N_WORKERS="${N_WORKERS:-1}"
 N_SEEDS="${N_SEEDS:-1}"
