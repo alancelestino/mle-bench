@@ -59,12 +59,6 @@ def prepare_local_competition(
 ):
     """
     Prepare a competition that uses local data instead of downloading from Kaggle.
-    
-    Args:
-        competition_id: ID of the competition to prepare
-        data_dir: Optional custom data directory
-        force: If True, re-prepare even if already prepared
-        generate_checksums_flag: If True, generate checksums after preparation
     """
     if data_dir:
         local_registry = registry.set_data_dir(Path(data_dir))
@@ -78,47 +72,29 @@ def prepare_local_competition(
     logger.info(f"Public directory: {competition.public_dir}")
     logger.info(f"Private directory: {competition.private_dir}")
     
-    # Check if already prepared
     if is_dataset_prepared(competition) and not force:
         logger.info(f"Competition {competition.id} is already prepared. Use --force to re-prepare.")
         return
     
-    # Create directories
     competition.raw_dir.mkdir(exist_ok=True, parents=True)
     create_prepared_dir(competition)
     
     logger.info(f"Running prepare function from {competition.prepare_fn.__module__}...")
+    competition.prepare_fn(raw=competition.raw_dir, public=competition.public_dir, private=competition.private_dir)
+    logger.info("Prepare function completed successfully!")
     
-    try:
-        # Run the prepare function
-        competition.prepare_fn(
-            raw=competition.raw_dir,
-            public=competition.public_dir,
-            private=competition.private_dir,
-        )
-        logger.info("Prepare function completed successfully!")
-    except Exception as e:
-        logger.error(f"Error running prepare function: {e}")
-        raise
-    
-    # Copy description to public directory
     logger.info("Copying description to public directory...")
     with open(competition.public_dir / "description.md", "w") as f:
         f.write(competition.description)
     
-    # Generate checksums if requested
     if generate_checksums_flag:
         logger.info("Generating checksums...")
         checksums = generate_checksums(competition)
-        
-        # Save checksums to YAML
         import yaml
         checksums_path = competition.public_dir.parent.parent.parent / "mlebench" / "competitions" / competition.id / "checksums.yaml"
         checksums_path.parent.mkdir(exist_ok=True, parents=True)
-        
         with open(checksums_path, 'w') as f:
             yaml.dump(checksums, f, default_flow_style=False, sort_keys=False)
-        
         logger.info(f"Checksums saved to {checksums_path}")
     
     logger.info(f"Competition {competition.id} prepared successfully!")
@@ -127,37 +103,17 @@ def prepare_local_competition(
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Prepare a competition with local data (no Kaggle download)"
-    )
-    parser.add_argument(
-        "-c",
-        "--competition-id",
-        required=True,
-        help="ID of the competition to prepare",
-    )
-    parser.add_argument(
-        "--data-dir",
-        help="Path to the directory where the data will be stored",
-        default=registry.get_data_dir(),
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force re-preparation even if already prepared",
-    )
-    parser.add_argument(
-        "--no-checksums",
-        action="store_true",
-        help="Skip checksum generation",
-    )
-    
+    parser = argparse.ArgumentParser(description="Prepare a competition with local data (no Kaggle download)")
+    parser.add_argument("-c", "--competition-id", required=True, help="ID of the competition to prepare")
+    parser.add_argument("--data-dir", help="Path to the directory where the data will be stored", default=registry.get_data_dir())
+    parser.add_argument("--force", action="store_true", help="Force re-preparation even if already prepared")
+    parser.add_argument("--no-checksums", action="store_true", help="Skip checksum generation")
     args = parser.parse_args()
-    
     prepare_local_competition(
         competition_id=args.competition_id,
         data_dir=Path(args.data_dir) if args.data_dir else None,
         force=args.force,
         generate_checksums_flag=not args.no_checksums,
     )
+
 

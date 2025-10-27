@@ -14,5 +14,7 @@ def _align(submission: pd.DataFrame, answers: pd.DataFrame, id_col: str, target_
 
 def grade(submission: pd.DataFrame, answers: pd.DataFrame) -> float:
     y_true, y_pred = _align(submission, answers, id_col="id", target_col="fare_amount")
-    rmse = mean_squared_error(y_true, y_pred, squared=False)
-    return float(rmse)
+    # Some older scikit-learn versions may not support squared=False; compute RMSE manually
+    mse = mean_squared_error(y_true, y_pred)
+    rmse = float(np.sqrt(mse))
+    return rmse
