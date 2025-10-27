@@ -1,0 +1,16 @@
+id: waste-classification
+name: Waste Classification
+competition_type: simple
+awards_medals: true
+prizes: null
+description: mlebench/competitions/waste-classification/description.md
+
+dataset:
+  answers: waste-classification/prepared/private/test.csv
+  sample_submission: waste-classification/prepared/public/sample_submission.csv
+
+grader:
+  name: auto
+  grade_fn: mlebench.competitions.waste-classification.grade:grade
+
+preparer: mlebench.competitions.waste-classification.prepare:prepare

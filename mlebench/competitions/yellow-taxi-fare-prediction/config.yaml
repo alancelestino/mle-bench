@@ -1,0 +1,16 @@
+id: yellow-taxi-fare-prediction
+name: Yellow Taxi Fare Prediction
+competition_type: simple
+awards_medals: true
+prizes: null
+description: mlebench/competitions/yellow-taxi-fare-prediction/description.md
+
+dataset:
+  answers: yellow-taxi-fare-prediction/prepared/private/test.csv
+  sample_submission: yellow-taxi-fare-prediction/prepared/public/sample_submission.csv
+
+grader:
+  name: auto
+  grade_fn: mlebench.competitions.yellow-taxi-fare-prediction.grade:grade
+
+preparer: mlebench.competitions.yellow-taxi-fare-prediction.prepare:prepare
