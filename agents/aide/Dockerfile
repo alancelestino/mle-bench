@@ -26,7 +26,7 @@ RUN apt-get update && apt-get install ffmpeg libsm6 libxext6  -y
 
 # create conda environment and install the requirements to it
 RUN conda run -n ${CONDA_ENV_NAME} pip install -r ${AGENT_DIR}/requirements.txt && \
-    conda run -n ${CONDA_ENV_NAME} pip install --upgrade anthropic httpx && \
+    conda run -n ${CONDA_ENV_NAME} pip install --upgrade 'anthropic>=0.34,<0.39' 'openai>=1.10,<2' 'httpx<0.28' && \
     conda clean -afy
 
 # put all the agent files in the expected location
