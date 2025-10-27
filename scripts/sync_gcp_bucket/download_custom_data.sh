@@ -11,7 +11,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../.." && pwd)"
 DEST_DIR="$REPO_ROOT/custom_data"
 
-echo "Starting selective download from $BUCKET_PATH to $DEST_DIR"
+echo "Starting sync from $BUCKET_PATH to $DEST_DIR"
 
 # Check if gsutil is available
 if ! command -v gsutil &> /dev/null; then
@@ -30,38 +30,7 @@ fi
 # Create destination directory if it doesn't exist
 mkdir -p "$DEST_DIR"
 
-echo "Checking for files to download..."
+echo "Syncing all objects recursively (unchanged files will be skipped)..."
+gsutil -m rsync -r -c "$BUCKET_PATH" "$DEST_DIR"
 
-# Get list of all files in bucket (relative paths)
-# This will give us paths like: custom_data/dataset_id_1/file.txt
-BUCKET_FILES=$(gsutil ls -r "$BUCKET_PATH/**" 2>/dev/null | grep -v "/$" | sed "s|$BUCKET_PATH/||")
-
-if [ -z "$BUCKET_FILES" ]; then
-    echo "No files found in bucket at $BUCKET_PATH"
-    exit 0
-fi
-
-DOWNLOAD_COUNT=0
-
-# Process each file
-echo "$BUCKET_FILES" | while read -r file_path; do
-    local_path="$DEST_DIR/${file_path#custom_data/}"  # Remove bucket prefix
-
-    # Check if local file exists
-    if [ ! -f "$local_path" ]; then
-        echo "Downloading: $file_path -> $local_path"
-        # Create directory structure if needed
-        mkdir -p "$(dirname "$local_path")"
-        # Download the file
-        if gsutil cp "$BUCKET_PATH/$file_path" "$local_path" 2>/dev/null; then
-            ((DOWNLOAD_COUNT++))
-        else
-            echo "Warning: Failed to download $file_path"
-        fi
-    else
-        echo "Skipping existing file: $local_path"
-    fi
-done
-
-echo "Download completed! Downloaded $DOWNLOAD_COUNT new files."
-echo "Existing files were preserved (no rewrites)."
+echo "Sync completed! All objects under $BUCKET_PATH are mirrored to $DEST_DIR."
