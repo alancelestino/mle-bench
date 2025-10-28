@@ -1,0 +1,17 @@
+id: arc-prize-2025
+name: Tabular Playground Series - May 2022
+competition_type: simple
+awards_medals: false
+prizes: null
+description: mlebench/competitions/arc-prize-2025/description.md
+
+dataset:
+  answers: arc-prize-2025/prepared/private/test.csv
+  gold_submission: arc-prize-2025/prepared/private/gold_submission.csv
+  sample_submission: arc-prize-2025/prepared/public/sample_submission.csv
+
+grader:
+  name: auc-roc
+  grade_fn: mlebench.competitions.arc-prize-2025.grade:grade
+
+preparer: mlebench.competitions.arc-prize-2025.prepare:prepare
