@@ -32,6 +32,12 @@ if [ "${1:-}" != "" ]; then
     COMP_SET="$REPO_ROOT/experiments/splits/${COMP_ID}.txt"
 fi
 
+# Prepare dataset if a competition id was provided
+if [ "${COMP_ID:-}" != "" ]; then
+    echo "Preparing dataset for competition: ${COMP_ID}"
+    PYTHONPATH="$REPO_ROOT${PYTHONPATH+:$PYTHONPATH}" python "$REPO_ROOT/scripts/add_new_competition/prepare_local_competition.py" -c "$COMP_ID"
+fi
+
 # Basic check to help catch typos
 if [ ! -f "$COMP_SET" ]; then
     echo "Error: competition set file not found: $COMP_SET" >&2
