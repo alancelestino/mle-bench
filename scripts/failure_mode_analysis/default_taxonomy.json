@@ -1,0 +1,64 @@
+{
+    "LLM_Coding_Flaw_Taxonomy": {
+      "Correctness": {
+        "Syntax_Parsing": ["invalid syntax", "missing symbols", "unresolved imports"],
+        "Type_Interface_Misuse": ["wrong types", "wrong function signatures", "nullability errors"],
+        "API_Library_Misuse": ["wrong call order", "deprecated APIs", "wrong return value usage"],
+        "Algorithmic_Logic": ["wrong algorithm choice", "off-by-one", "incorrect conditionals"],
+        "Data_Structure_Misuse": ["wrong container type", "mutation vs copy confusion"],
+        "Numerics": ["float precision", "overflow/underflow", "integer division errors"],
+        "State_Side_Effects": ["unintended mutation", "order dependence"],
+        "Concurrency_Asynchrony": ["race conditions", "deadlocks", "blocking in async code"],
+        "IO_Protocol_Semantics": ["serialization errors", "wrong encodings", "protocol version issues"],
+        "Error_Handling": ["swallowed exceptions", "broad catches", "missing retries"],
+        "Spec_Requirements_Drift": ["misread task", "wrong business rule", "partial implementation"]
+      },
+      "Reliability_Robustness": {
+        "Input_Validation": ["missing bounds checks", "unsanitized input"],
+        "Edge_Case_Coverage": ["empty inputs", "large inputs", "extreme values"],
+        "Resilience_Patterns": ["no timeouts", "no retries", "no circuit breakers"],
+        "Resource_Lifecycle": ["file/socket leaks", "thread leaks", "GPU resource leaks"]
+      },
+      "Security_Privacy": {
+        "Injection_Templating": ["SQL injection", "unsafe string formatting"],
+        "Secrets_Management": ["hard-coded tokens", "logging secrets"],
+        "AuthN_AuthZ": ["missing checks", "privilege escalation"],
+        "Crypto_Transport": ["weak algorithms", "SSL verification disabled"],
+        "Data_Privacy": ["PII leakage", "broad access permissions"]
+      },
+      "Performance_Efficiency": {
+        "Time_Complexity": ["O(n^2) where O(n)", "N+1 queries"],
+        "Space_Memory": ["unnecessary copies", "large tensor allocation"],
+        "IO_Network": ["chatty APIs", "no batching", "missing caching"],
+        "Hardware_Utilization": ["no vectorization", "wrong dtype", "CPU/GPU imbalance"]
+      },
+      "Maintainability_Evolvability": {
+        "Readability_Structure": ["long functions", "deep nesting", "unclear names"],
+        "Modularity_Coupling": ["circular dependencies", "god objects"],
+        "Abstraction_Leaks": ["mixing layers", "leaking internals"],
+        "Testability": ["hard to mock", "flaky behavior"],
+        "Documentation_Contracts": ["missing docstrings", "outdated comments"],
+        "Logging_Observability": ["no logs", "sensitive logs", "missing correlation IDs"]
+      },
+      "Portability_Environment": {
+        "Dependency_Versioning": ["incompatible versions", "missing dependencies"],
+        "Build_Runtime_Assumptions": ["OS-specific paths", "locale assumptions"],
+        "Config_Management": ["hard-coded config", "drifting environments"],
+        "Reproducibility": ["non-deterministic seeds", "missing lockfiles"]
+      },
+      "LLM_Specific": {
+        "Spec_Adherence": ["ignores tool instructions", "wrong file layout"],
+        "Hallucinated_APIs": ["invented functions", "wrong method names"],
+        "Incomplete_Solutions": ["missing tests", "left TODOs"],
+        "Over_Generalization": ["boilerplate overfit", "cargo-culting"],
+        "Prompt_Context_Leakage": ["copies examples verbatim", "includes system prompts"],
+        "Tool_Use_Orchestration": ["wrong tool call", "bad error recovery"]
+      },
+      "Testing_Quality": {
+        "Test_Coverage": ["no unit tests", "no negative tests"],
+        "Test_AntiPatterns": ["brittle mocks", "time-sensitive tests"],
+        "Evaluation_Gaps": ["only compilation tested", "no runtime assertions"]
+      }
+    }
+  }
+  
