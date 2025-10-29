@@ -32,11 +32,65 @@ echo "=========================================="
 echo "MLE-bench Setup Script"
 echo "=========================================="
 
-# Check if Docker is installed
+# Check if Docker is installed; if not, install it (Debian/Ubuntu)
 if ! command -v docker &> /dev/null; then
-    echo "Error: Docker is not installed."
-    echo "Please install Docker first: https://docs.docker.com/engine/install/"
-    exit 1
+    echo "Docker is not installed. Installing Docker (requires sudo)..."
+    export DEBIAN_FRONTEND=noninteractive
+    # Base prerequisites
+    sudo apt-get update -y
+    sudo apt-get install -y ca-certificates curl gnupg lsb-release apt-transport-https
+
+    # Ensure keyrings directory exists
+    if [ ! -d /etc/apt/keyrings ]; then
+        sudo install -m 0755 -d /etc/apt/keyrings
+    fi
+
+    if . /etc/os-release; then
+        if [ "$ID" = "debian" ]; then
+            if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+                curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor --batch --yes -o /etc/apt/keyrings/docker.gpg
+            fi
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/debian ${VERSION_CODENAME} stable" \
+              | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+        elif [ "$ID" = "ubuntu" ]; then
+            if [ ! -f /etc/apt/keyrings/docker.gpg ]; then
+                curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor --batch --yes -o /etc/apt/keyrings/docker.gpg
+            fi
+            echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu ${VERSION_CODENAME} stable" \
+              | sudo tee /etc/apt/sources.list.d/docker.list >/dev/null
+        else
+            echo "Unsupported OS ($ID) for automatic Docker install. Please install Docker manually: https://docs.docker.com/engine/install/"
+            exit 1
+        fi
+    fi
+
+    sudo apt-get update -y
+    sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+    sudo systemctl enable --now docker || true
+
+    # Allow current user to use Docker without sudo in future sessions
+    if ! getent group docker >/dev/null; then
+        sudo groupadd docker || true
+    fi
+    if ! groups "$USER" | grep -q "\bdocker\b"; then
+        sudo usermod -aG docker "$USER" || true
+        echo "Added $USER to 'docker' group. You may need to log out/in for this to take effect."
+    fi
+
+    # Re-check docker availability
+    if command -v docker &> /dev/null; then
+        echo "✓ Docker installed."
+    else
+        echo "Warning: Docker installation may not have completed successfully."
+    fi
+else
+    echo "✓ Docker is installed."
+fi
+
+# Determine docker command (fallback to sudo if current session lacks group membership)
+DOCKER="docker"
+if ! $DOCKER info >/dev/null 2>&1; then
+    DOCKER="sudo docker"
 fi
 
 # Check if running with sudo/root for system package installation
@@ -112,10 +166,10 @@ else
     sudo apt install -y wget curl apt-transport-https fuse rsync
 
     # Remove any existing Docker containers to allow Sysbox post-install to proceed
-    CONTAINERS=$(docker ps -aq || true)
+    CONTAINERS=$($DOCKER ps -aq || true)
     if [ -n "$CONTAINERS" ]; then
         echo "Removing existing Docker containers before Sysbox install..."
-        sudo docker rm -f $CONTAINERS || true
+        $DOCKER rm -f $CONTAINERS || true
     fi
 
     # Download the latest Sysbox package from GitHub releases
