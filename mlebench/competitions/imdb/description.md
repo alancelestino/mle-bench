@@ -10,9 +10,9 @@ The **training set** contains examples with known sentiment labels.
 The **test set** contains examples for which you need to predict the sentiment label. The true labels exist but are hidden for the purpose of this evaluation.  
 The test set contains 5,000 text files.
 
-File and Folder Structure
+File and Folder Structure (as seen inside the container at `/home/data`)
 
-`imdb/`  
+`/home/data/imdb/`  
 ├── `train/`  
 │ ├── `pos/`  
 │ │ ├── `101.txt`  
@@ -23,7 +23,7 @@ File and Folder Structure
 │   
 └── `test/`  
 │ │ ├── `104.txt`  
-│ │ └── ...  
+│ │ └── `...`  
 └── `imdb.vocab`
 
 ---
@@ -35,7 +35,7 @@ The final output must be a CSV file:
 
 `submission.csv` with exactly two columns:
 
-- `id`: the unique identifier matching the IDs in `testset`  
+- `id`: the file name corresponding to each test review (e.g., `1000_4.txt`)  
 - `label`: the predicted binary sentiment label.
 
 **Deliverable Format:**  
@@ -48,8 +48,8 @@ The output file should look like:
 `1001_3txt,0`  
 `...`
 
-O for the negative class  
-1 fro the positive class
+0 for the negative class  
+1 for the positive class
 
 ##  Evaluation
 

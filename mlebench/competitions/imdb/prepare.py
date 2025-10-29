@@ -92,3 +92,16 @@ def prepare(raw: Path, public: Path, private: Path):
     # Write private answers if available
     if answers_df is not None:
         answers_df.to_csv(private / "test.csv", index=False)
+
+    # Also expose the original .txt review files for agents that read raw text
+    imdb_public_root = public / "imdb"
+    imdb_public_root.mkdir(parents=True, exist_ok=True)
+
+    if train_dir.exists():
+        shutil.copytree(train_dir, imdb_public_root / "train", dirs_exist_ok=True)
+    if test_dir.exists():
+        shutil.copytree(test_dir, imdb_public_root / "test", dirs_exist_ok=True)
+
+    vocab_file = custom_data_path / "imdb.vocab"
+    if vocab_file.exists():
+        shutil.copy(vocab_file, imdb_public_root / "imdb.vocab")

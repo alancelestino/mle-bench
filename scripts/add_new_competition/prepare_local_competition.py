@@ -91,8 +91,10 @@ def prepare_local_competition(
         logger.info("Generating checksums...")
         checksums = generate_checksums(competition)
         import yaml
-        checksums_path = competition.public_dir.parent.parent.parent / "mlebench" / "competitions" / competition.id / "checksums.yaml"
-        checksums_path.parent.mkdir(exist_ok=True, parents=True)
+        # Write checksums to the repository competitions directory so the registry can find them
+        checksums_dir = local_registry.get_competitions_dir() / competition.id
+        checksums_dir.mkdir(exist_ok=True, parents=True)
+        checksums_path = checksums_dir / "checksums.yaml"
         with open(checksums_path, 'w') as f:
             yaml.dump(checksums, f, default_flow_style=False, sort_keys=False)
         logger.info(f"Checksums saved to {checksums_path}")

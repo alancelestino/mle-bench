@@ -11,11 +11,13 @@ This document instructs an LLM how to add a new competition to this repo using l
 - Repo root: the directory that contains `mlebench/` and `scripts/`
 - Custom data lives under: `custom_data/<dataset_group>/<source_dir>/`
   - Required files:
-    - `<source_dir>/train.csv`
-    - `<source_dir>/test.csv`
+    - `<source_dir>/train.csv` (or a directory tree you will convert to CSV in `prepare.py`)
+    - `<source_dir>/test.csv` (or a directory tree you will convert to CSV in `prepare.py`)
     - `<dataset_group>/test_golden_answer.csv` (columns: `id,<target>`)
 - Prepared data is written to the cache by default:
   - macOS: `~/Library/Caches/mle-bench/data/<competition-id>/prepared/{public,private}`
+  - Linux: `~/.cache/mle-bench/data/<competition-id>/prepared/{public,private}`
+  - Inside container, public data is mounted read-only at `/home/data` and private answers at `/private/data/<competition-id>/prepared/private/`
 
 ### Step 1: Pick a competition id and name
 - Use a short, kebab-cased id (e.g., `freiburg-groceries`, `imdb`, `yellow-taxi-fare-prediction`).
@@ -208,10 +210,10 @@ Use the helper:
 source .venv/bin/activate
 python scripts/add_new_competition/prepare_local_competition.py -c <competition-id> --force
 ```
-Expected output includes copying CSVs, (optionally) images, and generating checksums. Verify:
+Expected output includes copying CSVs, (optionally) images, and generating checksums. Verify (Linux example):
 ```bash
-ls -lh ~/Library/Caches/mle-bench/data/<competition-id>/prepared/public | head
-ls -lh ~/Library/Caches/mle-bench/data/<competition-id>/prepared/private | head
+ls -lh ~/.cache/mle-bench/data/<competition-id>/prepared/public | head
+ls -lh ~/.cache/mle-bench/data/<competition-id>/prepared/private | head
 ```
 
 Optional: prepare to a custom data dir (e.g., under repo):
@@ -251,6 +253,7 @@ If the runtime `sysbox-runc` causes an error on macOS, edit `environment/config/
 - Grader wrong metric: update `grade.py` to accuracy for classification or RMSE for regression, then re-run Step 5.
 - Sample submission invalid: ensure columns match the required `id` and target (`label` for classification or the numeric target column for regression).
 - Paths wrong in `prepare.py`: fix the `custom_data_path` and re-run Step 4 with `--force`.
+- Inside-container paths: data appears under `/home/data` (public) and private answers under `/private/data/<competition-id>/prepared/private/`. Do not hardcode other in-container paths in descriptions.
 - Data not found: confirm `custom_data/<dataset_group>/<source_dir>/train.csv` and `test.csv` exist; confirm golden labels file is at `custom_data/<dataset_group>/test_golden_answer.csv`.
 
 ### Step 8: Minimal checklist (LLM must confirm)
